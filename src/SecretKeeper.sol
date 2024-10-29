@@ -42,11 +42,12 @@ contract SecretKeeper is EIP712 {
         require(_party2 != address(0), "Zero address");
         require(_party2 != msg.sender, "Party1 and Party2 cannot be the same");
 
-        // Create the typed data hash
+        // Create the EIP-712typed data hash
         bytes32 structHash = keccak256(abi.encode(_AGREEMENT_TYPEHASH, msg.sender, _party2, _secretHash));
-
+        // make the hash compatible with wallet signatures
         bytes32 hash = _hashTypedDataV4(structHash);
 
+        // verify the signatures by recovering the signer's address using the hash and the signatures
         require(ECDSA.recover(hash, _party1Signature) == msg.sender, "Invalid party1 signature");
         require(ECDSA.recover(hash, _party2Signature) == _party2, "Invalid party2 signature");
 
