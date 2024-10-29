@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 // TODO: add contract description
 // TODO: ADD Natspec
 contract SecretKeeper is EIP712 {
-
     struct SecretAgreement {
         address party1;
         address party2;
@@ -17,10 +16,8 @@ contract SecretKeeper is EIP712 {
         uint256 createdBlock;
     }
 
-    bytes32 private constant _AGREEMENT_TYPEHASH = keccak256(
-        "SecretAgreement(address party1,address party2,bytes32 secretHash)"
-    );
-
+    bytes32 private constant _AGREEMENT_TYPEHASH =
+        keccak256("SecretAgreement(address party1,address party2,bytes32 secretHash)");
 
     // Incremental IDs are predictable (1, 2, 3...)
     // Attackers can predict the next ID and potentially front-run transactions
@@ -28,7 +25,9 @@ contract SecretKeeper is EIP712 {
     // incremental IDs do have advantages: Lower gas cost (no hashing required), easier to track total number of items, simpler to iterate through, human-readable
     mapping(bytes32 => SecretAgreement) public agreements;
 
-    event SecretStored(bytes32 indexed agreementId, address indexed party1, address indexed party2, uint256 storedBlock); // check if the storedBlock needs to be indexed. and if the agreementId needs to be indexed.
+    event SecretStored(
+        bytes32 indexed agreementId, address indexed party1, address indexed party2, uint256 storedBlock
+    ); // check if the storedBlock needs to be indexed. and if the agreementId needs to be indexed.
     event SecretRevealed(bytes32 indexed agreementId, address indexed revealer, string secret);
 
     constructor() EIP712("SecretKeeper", "1") {}
@@ -44,14 +43,7 @@ contract SecretKeeper is EIP712 {
         require(_party2 != msg.sender, "Party1 and Party2 cannot be the same");
 
         // Create the typed data hash
-        bytes32 structHash = keccak256(
-            abi.encode(
-                _AGREEMENT_TYPEHASH,
-                msg.sender,
-                _party2,
-                _secretHash
-            )
-        );
+        bytes32 structHash = keccak256(abi.encode(_AGREEMENT_TYPEHASH, msg.sender, _party2, _secretHash));
 
         bytes32 hash = _hashTypedDataV4(structHash);
 
@@ -96,19 +88,8 @@ contract SecretKeeper is EIP712 {
 
     // TODO: Remove if not needed for tests
     // Helper function for off-chain signature generation
-    function getDigest(
-        address party1,
-        address party2,
-        bytes32 secretHash
-    ) public view returns (bytes32) {
-        bytes32 structHash = keccak256(
-            abi.encode(
-                _AGREEMENT_TYPEHASH,
-                party1,
-                party2,
-                secretHash
-            )
-        );
+    function getDigest(address party1, address party2, bytes32 secretHash) public view returns (bytes32) {
+        bytes32 structHash = keccak256(abi.encode(_AGREEMENT_TYPEHASH, party1, party2, secretHash));
         return _hashTypedDataV4(structHash);
     }
 }
