@@ -5,7 +5,7 @@ pragma solidity 0.8.20;
 import {Test, console} from "forge-std/Test.sol";
 import {SecretKeeper} from "../src/SecretKeeper.sol";
 
-// run with `forge test --match-contract SecretKeeperTest`
+// to run: forge test --match-contract SecretKeeperTest
 contract SecretKeeperTest is Test {
     SecretKeeper public secretKeeper;
 
@@ -13,10 +13,12 @@ contract SecretKeeperTest is Test {
         secretKeeper = new SecretKeeper();
     }
 
+    // TODO: can we grab this from the contrct vs add it here?
     event SecretStored(
         bytes32 indexed agreementId, address indexed party1, address indexed party2, uint256 storedBlock
     );
 
+    // TODO: same as above
     event SecretRevealed(bytes32 indexed agreementId, address indexed revealer, string secret);
 
     // helper for signature creation
