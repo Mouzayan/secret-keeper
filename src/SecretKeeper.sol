@@ -61,10 +61,9 @@ contract SecretKeeper is ISecretKeeper, EIP712 {
 
         // create EIP-712 typed data hash
         bytes32 structHash = keccak256(abi.encode(_AGREEMENT_TYPEHASH, msg.sender, _party2, _secretHash));
-        // make the hash compatible with wallet signatures
         bytes32 hash = _hashTypedDataV4(structHash);
 
-        // recover the signers' addresses
+        // address recovery
         require(ECDSA.recover(hash, _party1Signature) == msg.sender, "ECDSAInvalidSignature");
         require(ECDSA.recover(hash, _party2Signature) == _party2, "ECDSAInvalidSignature");
 
