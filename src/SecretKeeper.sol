@@ -5,33 +5,38 @@ pragma solidity 0.8.20;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
-// TODO: CREATE interface for the contract
+import {ISecretKeeper} from "./interfaces/ISecretKeeper.sol";
+
 // TODO: add contract description
 // TODO: ADD Natspec
-contract SecretKeeper is EIP712 {
-    struct SecretAgreement {
-        address party1;
-        address party2;
-        bytes32 secretHash;
-        uint256 createdBlock;
-    }
-
+contract SecretKeeper is ISecretKeeper, EIP712 {
+    // ============================================ STATE ==============================================
+    // =================== Constants =====================
     bytes32 private constant _AGREEMENT_TYPEHASH =
         keccak256("SecretAgreement(address party1,address party2,bytes32 secretHash)");
 
+    // ================ Agreements State =================
     // Incremental IDs are predictable (1, 2, 3...)
     // Attackers can predict the next ID and potentially front-run transactions
     // Hash-based IDs are pseudorandom and harder to predict
     // incremental IDs do have advantages: Lower gas cost (no hashing required), easier to track total number of items, simpler to iterate through, human-readable
     mapping(bytes32 => SecretAgreement) public agreements;
 
-    event SecretStored(
-        bytes32 indexed agreementId, address indexed party1, address indexed party2, uint256 storedBlock
-    ); // check if the storedBlock needs to be indexed. and if the agreementId needs to be indexed.
-    event SecretRevealed(bytes32 indexed agreementId, address indexed revealer, string secret);
-
+    /**
+     * @notice Sets up the contract by initializing EIP712 domain separator.
+     */
     constructor() EIP712("SecretKeeper", "1") {}
 
+    /**
+     * @notice Creates a new secret agreement between two parties with signatures.
+     *
+     * @param _party2                     The address of the second party in the agreement.
+     * @param _secretHash                 The keccak256 hash of the secret being stored.
+     * @param _party1Signature            The EIP712 signature of the first party (msg.sender).
+     * @param _party2Signature            The EIP712 signature of the second party.
+     *
+     * @return                            The unique identifier for the created agreement.
+     */
     function createAgreement(
         address _party2,
         bytes32 _secretHash,
@@ -65,6 +70,14 @@ contract SecretKeeper is EIP712 {
         return agreementId; // check if we name the return variable, if we can eleminiate the return statement.
     }
 
+    /**
+     * @notice Reveals a previously stored secret and deletes the agreement.
+     *
+     * @param _agreementId               The unique identifier of the agreement.
+     * @param _secret                    The original secret being revealed.
+     *
+     * @return                           The revealed secret string.
+     */
     function revealSecret(
         bytes32 _agreementId,
         string memory _secret // The original secret is needed to reveal (proof of knowledge)
