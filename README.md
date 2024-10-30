@@ -2,7 +2,7 @@
 
 **SecretKeeper Smart Contract**
 
-This repository contains a Solidity smart contract that allows any two parties to store and later reveal a mutually agreed-upon secret on-chain. This contract can be used as a proof that both parties agreed on something at a specific block, and it allows either party to reveal the secret at a later time.
+This repository contains a smart contract that allows any two parties to store and later reveal a mutually agreed-upon secret on-chain. This contract can be used as a proof that both parties agreed on something at a specific block, and it allows either party to reveal the secret at a later time.
 
 **Contract Functionality**
 
@@ -15,7 +15,7 @@ This repository contains a Solidity smart contract that allows any two parties t
   - Upon revelation, the contract emits an event specifying the revealing party and the real value of the secret. The original stored secret is then deleted from the contract’s storage.
 
 - **Single Transaction Registration:**
-  - The secret must be registered in a single transaction, ensuring that both parties’ signatures and the secret itself are stored in the same block. This guarantees that the agreement is atomic and timestamped at the block level.
+  - The secret is registered in a single transaction, ensuring that both parties’ signatures and the secret itself are stored in the same block. Therefore, the agreement is atomic and timestamped at the block level.
 
 **Implementation Details**
 
