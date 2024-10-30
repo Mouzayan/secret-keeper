@@ -415,7 +415,7 @@ contract SecretKeeperTest is Test {
             secretHash
         );
 
-        // create agreement
+        // party2 creates the agreement
         vm.prank(party2);
         bytes32 agreementId = secretKeeper.createAgreement(
             party1,
@@ -432,7 +432,7 @@ contract SecretKeeperTest is Test {
         vm.expectEmit(true, true, false, true);
         emit SecretRevealed(agreementId, party1, secret);
 
-        // reveal the secret
+        // party1 reveals the secret
         secretKeeper.revealSecret(agreementId, secret);
     }
 }
