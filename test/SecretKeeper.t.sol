@@ -20,6 +20,12 @@ contract SecretKeeperTest is Test {
         uint256 storedBlock
     );
 
+    event SecretRevealed(
+        bytes32 indexed agreementId,
+        address indexed revealer,
+        string secret
+    );
+
     // helper for signature creation
     function createSignatures(
         uint256 party1PrivateKey,
@@ -72,14 +78,6 @@ contract SecretKeeperTest is Test {
 
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
     }
-
-    // In revealSecret:
-    // √ confirm that the functoin reverts if the agreement does not exist
-    // √ confirm that if msg.sender is not either party1 or party2, the function reverts
-    // √ confirm that the secret is valid
-    // confirm the call block number is greater than the created block
-    // confirm the agreement is deleted from storage after the secret is revealed
-    // confirm the event is emitted with the correct arguments
 
     function test_RevertIfParty2IsZeroAddress() public {
         address party2 = address(0);
@@ -260,5 +258,181 @@ contract SecretKeeperTest is Test {
         vm.prank(party1);
         vm.expectRevert("Invalid secret");
         secretKeeper.revealSecret(agreementId, invalidSecret);
+    }
+
+    function test_RevertsIfRevealBlockNotGreaterThanCreateBlock() public {
+        // setup parties
+        uint256 party1PrivateKey = 1;
+        address party1 = vm.addr(party1PrivateKey);
+        uint256 party2PrivateKey = 2;
+        address party2 = vm.addr(party2PrivateKey);
+
+        // create the secret
+        string memory secret = "mysecret";
+        bytes32 secretHash = keccak256(abi.encodePacked(secret));
+
+        uint256 createdBlockNumber = block.number;
+        // get signatures
+        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
+            party1PrivateKey,
+            party2PrivateKey,
+            party1,
+            party2,
+            secretHash
+        );
+
+        // make agreement
+        vm.prank(party1);
+        bytes32 agreementId = secretKeeper.createAgreement(
+            party2,
+            secretHash,
+            party1Signature,
+            party2Signature
+        );
+
+        uint256 revealedBlockNumber = block.number;
+
+        // revert when revealing in the same block
+        vm.prank(party1);
+        vm.expectRevert("Must reveal in a later block");
+        secretKeeper.revealSecret(agreementId, secret);
+
+        // the block numbers are equal
+        assertEq(createdBlockNumber, revealedBlockNumber, "Block numbers are not equal");
+    }
+
+    function test_SuccessfulRevealInLaterBlock() public {
+        // setup parties
+        uint256 party1PrivateKey = 1;
+        address party1 = vm.addr(party1PrivateKey);
+        uint256 party2PrivateKey = 2;
+        address party2 = vm.addr(party2PrivateKey);
+
+        // create secret
+        string memory secret = "mysecret";
+        bytes32 secretHash = keccak256(abi.encodePacked(secret));
+
+        uint256 createdBlockNumber = block.number;
+        // get signatures
+        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
+            party1PrivateKey,
+            party2PrivateKey,
+            party1,
+            party2,
+            secretHash
+        );
+
+        // make agreement
+        vm.prank(party1);
+        bytes32 agreementId = secretKeeper.createAgreement(
+            party2,
+            secretHash,
+            party1Signature,
+            party2Signature
+        );
+
+        // advance to next block
+        vm.roll(block.number + 1);
+
+        uint256 revealedBlockNumber = block.number;
+
+        // reveal should succeed
+        vm.prank(party1);
+        secretKeeper.revealSecret(agreementId, secret);
+
+        // confirm reveal block number is greater
+        assertGt(revealedBlockNumber, createdBlockNumber, "Reveal block should be greater than create block");
+    }
+
+    function test_AgreementDeletedAfterReveal() public {
+        // setup parties
+        uint256 party1PrivateKey = 1;
+        address party1 = vm.addr(party1PrivateKey);
+        uint256 party2PrivateKey = 2;
+        address party2 = vm.addr(party2PrivateKey);
+
+        // create secret
+        string memory secret = "mysecret";
+        bytes32 secretHash = keccak256(abi.encodePacked(secret));
+
+        // get signatures
+        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
+            party1PrivateKey,
+            party2PrivateKey,
+            party1,
+            party2,
+            secretHash
+        );
+
+        // make the agreement
+        vm.prank(party1);
+        bytes32 agreementId = secretKeeper.createAgreement(
+            party2,
+            secretHash,
+            party1Signature,
+            party2Signature
+        );
+
+        // advance to next block
+        vm.roll(block.number + 1);
+
+        // reveal secret
+        vm.prank(party1);
+        secretKeeper.revealSecret(agreementId, secret);
+
+        // check storage after reveal
+        (
+            address storedParty1,
+            address storedParty2,
+            bytes32 storedSecretHash,
+            uint256 storedBlockNumber
+        ) = secretKeeper.agreements(agreementId);
+
+        // verify all values are zero
+        assertEq(storedParty1, address(0), "Party1 should be zero address");
+        assertEq(storedParty2, address(0), "Party2 should be zero address");
+        assertEq(storedSecretHash, bytes32(0), "Secret hash should be empty");
+        assertEq(storedBlockNumber, 0, "Block number should be zero");
+    }
+
+    function test_EmitSecretRevealedEvent() public {
+        // setup parties
+        uint256 party1PrivateKey = 1;
+        address party1 = vm.addr(party1PrivateKey);
+        uint256 party2PrivateKey = 2;
+        address party2 = vm.addr(party2PrivateKey);
+
+        // create secret
+        string memory secret = "mysecret";
+        bytes32 secretHash = keccak256(abi.encodePacked(secret));
+
+        // signatures creation
+        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
+            party1PrivateKey,
+            party2PrivateKey,
+            party2,
+            party1,
+            secretHash
+        );
+
+        // create agreement
+        vm.prank(party2);
+        bytes32 agreementId = secretKeeper.createAgreement(
+            party1,
+            secretHash,
+            party2Signature,
+            party1Signature
+        );
+
+        // advance block for reveal
+        vm.roll(block.number + 1);
+
+        // expect SecretRevealed event with correct arguments
+        vm.prank(party1);
+        vm.expectEmit(true, true, false, true);
+        emit SecretRevealed(agreementId, party1, secret);
+
+        // reveal the secret
+        secretKeeper.revealSecret(agreementId, secret);
     }
 }
