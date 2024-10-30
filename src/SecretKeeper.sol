@@ -69,12 +69,8 @@ contract SecretKeeper is ISecretKeeper, EIP712 {
 
         bytes32 agreementId = keccak256(abi.encodePacked(msg.sender, _party2, block.timestamp));
 
-        agreements[agreementId] = SecretAgreement({
-            party1: msg.sender,
-            party2: _party2,
-            secretHash: _secretHash,
-            createdBlock: block.number
-        });
+        agreements[agreementId] =
+            SecretAgreement({party1: msg.sender, party2: _party2, secretHash: _secretHash, createdBlock: block.number});
 
         emit SecretStored(agreementId, msg.sender, _party2, block.number);
         return agreementId;
@@ -88,10 +84,7 @@ contract SecretKeeper is ISecretKeeper, EIP712 {
      *
      * @return                           The revealed secret string.
      */
-    function revealSecret(
-        bytes32 _agreementId,
-        string memory _secret
-    ) external returns (string memory) {
+    function revealSecret(bytes32 _agreementId, string memory _secret) external returns (string memory) {
         SecretAgreement storage agreement = agreements[_agreementId];
 
         // check secret existence by verifying party1 not zero address
