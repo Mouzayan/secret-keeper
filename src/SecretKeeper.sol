@@ -48,8 +48,8 @@ contract SecretKeeper is EIP712 {
         bytes32 hash = _hashTypedDataV4(structHash);
 
         // verify the signatures by recovering the signer's address using the hash and the signatures
-        require(ECDSA.recover(hash, _party1Signature) == msg.sender, "Invalid party1 signature");
-        require(ECDSA.recover(hash, _party2Signature) == _party2, "Invalid party2 signature");
+        require(ECDSA.recover(hash, _party1Signature) == msg.sender, "ECDSAInvalidSignature");
+        require(ECDSA.recover(hash, _party2Signature) == _party2, "ECDSAInvalidSignature");
 
         // Effects
         bytes32 agreementId = keccak256(abi.encodePacked(msg.sender, _party2, block.timestamp));
@@ -85,12 +85,5 @@ contract SecretKeeper is EIP712 {
 
         emit SecretRevealed(_agreementId, msg.sender, _secret);
         return _secret; // check if we name the return variable, if we can eleminiate the return statement.
-    }
-
-    // TODO: Remove if not needed for tests
-    // Helper function for off-chain signature generation
-    function getDigest(address party1, address party2, bytes32 secretHash) public view returns (bytes32) {
-        bytes32 structHash = keccak256(abi.encode(_AGREEMENT_TYPEHASH, party1, party2, secretHash));
-        return _hashTypedDataV4(structHash);
     }
 }
