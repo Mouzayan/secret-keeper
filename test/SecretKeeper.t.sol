@@ -5,7 +5,6 @@ pragma solidity 0.8.20;
 import {Test, console} from "forge-std/Test.sol";
 import {SecretKeeper} from "../src/SecretKeeper.sol";
 
-// to run: forge test --match-contract SecretKeeperTest
 contract SecretKeeperTest is Test {
     SecretKeeper public secretKeeper;
 
