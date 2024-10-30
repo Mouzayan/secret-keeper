@@ -14,17 +14,10 @@ contract SecretKeeperTest is Test {
     }
 
     event SecretStored(
-        bytes32 indexed agreementId,
-        address indexed party1,
-        address indexed party2,
-        uint256 storedBlock
+        bytes32 indexed agreementId, address indexed party1, address indexed party2, uint256 storedBlock
     );
 
-    event SecretRevealed(
-        bytes32 indexed agreementId,
-        address indexed revealer,
-        string secret
-    );
+    event SecretRevealed(bytes32 indexed agreementId, address indexed revealer, string secret);
 
     // helper for signature creation
     function createSignatures(
@@ -44,35 +37,22 @@ contract SecretKeeperTest is Test {
     }
 
     // helper for digest creation
-    function getDigest(
-        address party1,
-        address party2,
-        bytes32 secretHash
-    ) internal view returns (bytes32) {
+    function getDigest(address party1, address party2, bytes32 secretHash) internal view returns (bytes32) {
         // create hash of agreement type
-        bytes32 _AGREEMENT_TYPEHASH = keccak256(
-            "SecretAgreement(address party1,address party2,bytes32 secretHash)"
-        );
+        bytes32 _AGREEMENT_TYPEHASH = keccak256("SecretAgreement(address party1,address party2,bytes32 secretHash)");
         // hash the actual data of the agreement
-        bytes32 structHash = keccak256(
-            abi.encode(_AGREEMENT_TYPEHASH, party1, party2, secretHash)
-        );
+        bytes32 structHash = keccak256(abi.encode(_AGREEMENT_TYPEHASH, party1, party2, secretHash));
 
         // create the EIP-712 compliant digest
         // with domain separator info, chain ID, contract address
         string memory name = "SecretKeeper";
         string memory version = "1";
-        bytes32 TYPE_HASH = keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-        );
+        bytes32 TYPE_HASH =
+            keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
         bytes32 domainSeparator = keccak256(
             abi.encode(
-                TYPE_HASH,
-                keccak256(bytes(name)),
-                keccak256(bytes(version)),
-                block.chainid,
-                address(secretKeeper)
+                TYPE_HASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(secretKeeper)
             )
         );
 
@@ -119,13 +99,8 @@ contract SecretKeeperTest is Test {
         bytes32 secretHash = keccak256(abi.encodePacked("secret"));
 
         // signatures creation
-        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
-            party1PrivateKey,
-            party2PrivateKey,
-            party1,
-            party2,
-            secretHash
-        );
+        (bytes memory party1Signature, bytes memory party2Signature) =
+            createSignatures(party1PrivateKey, party2PrivateKey, party1, party2, secretHash);
 
         // create agreementId
         bytes32 agreementId = keccak256(abi.encodePacked(party1, party2, block.timestamp));
@@ -149,31 +124,17 @@ contract SecretKeeperTest is Test {
         bytes32 secretHash = keccak256(abi.encodePacked("secret"));
 
         // signatures creation
-        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
-            party1PrivateKey,
-            party2PrivateKey,
-            party1,
-            party2,
-            secretHash
-        );
+        (bytes memory party1Signature, bytes memory party2Signature) =
+            createSignatures(party1PrivateKey, party2PrivateKey, party1, party2, secretHash);
 
         // msg.sender is party1
         vm.prank(party1);
         // create the agreement
-        bytes32 agreementId = secretKeeper.createAgreement(
-            party2,
-            secretHash,
-            party1Signature,
-            party2Signature
-        );
+        bytes32 agreementId = secretKeeper.createAgreement(party2, secretHash, party1Signature, party2Signature);
 
         // retrieve stored agreement values
-        (
-            address storedParty1,
-            address storedParty2,
-            bytes32 storedSecretHash,
-            uint256 storedBlockNumber
-        ) = secretKeeper.agreements(agreementId);
+        (address storedParty1, address storedParty2, bytes32 storedSecretHash, uint256 storedBlockNumber) =
+            secretKeeper.agreements(agreementId);
 
         assertEq(storedParty1, party1, "Party1 not stored correctly");
         assertEq(storedParty2, party2, "Party2 not stored correctly");
@@ -201,22 +162,12 @@ contract SecretKeeperTest is Test {
         bytes32 secretHash = keccak256(abi.encodePacked(secret));
 
         // get the signatures
-        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
-            party1PrivateKey,
-            party2PrivateKey,
-            party1,
-            party2,
-            secretHash
-        );
+        (bytes memory party1Signature, bytes memory party2Signature) =
+            createSignatures(party1PrivateKey, party2PrivateKey, party1, party2, secretHash);
 
         // create the agreement
         vm.prank(party1);
-        bytes32 agreementId = secretKeeper.createAgreement(
-            party2,
-            secretHash,
-            party1Signature,
-            party2Signature
-        );
+        bytes32 agreementId = secretKeeper.createAgreement(party2, secretHash, party1Signature, party2Signature);
 
         // unauthorized caller tries to reveal secret
         vm.prank(caller);
@@ -236,22 +187,12 @@ contract SecretKeeperTest is Test {
         bytes32 secretHash = keccak256(abi.encodePacked(secret));
 
         // create signatures
-        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
-            party1PrivateKey,
-            party2PrivateKey,
-            party1,
-            party2,
-            secretHash
-        );
+        (bytes memory party1Signature, bytes memory party2Signature) =
+            createSignatures(party1PrivateKey, party2PrivateKey, party1, party2, secretHash);
 
         // create agreement
         vm.prank(party1);
-        bytes32 agreementId = secretKeeper.createAgreement(
-            party2,
-            secretHash,
-            party1Signature,
-            party2Signature
-        );
+        bytes32 agreementId = secretKeeper.createAgreement(party2, secretHash, party1Signature, party2Signature);
 
         // reverts when revealing invalid secret
         string memory invalidSecret = "invalidSecret";
@@ -273,22 +214,12 @@ contract SecretKeeperTest is Test {
 
         uint256 createdBlockNumber = block.number;
         // get signatures
-        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
-            party1PrivateKey,
-            party2PrivateKey,
-            party1,
-            party2,
-            secretHash
-        );
+        (bytes memory party1Signature, bytes memory party2Signature) =
+            createSignatures(party1PrivateKey, party2PrivateKey, party1, party2, secretHash);
 
         // make agreement
         vm.prank(party1);
-        bytes32 agreementId = secretKeeper.createAgreement(
-            party2,
-            secretHash,
-            party1Signature,
-            party2Signature
-        );
+        bytes32 agreementId = secretKeeper.createAgreement(party2, secretHash, party1Signature, party2Signature);
 
         uint256 revealedBlockNumber = block.number;
 
@@ -314,22 +245,12 @@ contract SecretKeeperTest is Test {
 
         uint256 createdBlockNumber = block.number;
         // get signatures
-        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
-            party1PrivateKey,
-            party2PrivateKey,
-            party1,
-            party2,
-            secretHash
-        );
+        (bytes memory party1Signature, bytes memory party2Signature) =
+            createSignatures(party1PrivateKey, party2PrivateKey, party1, party2, secretHash);
 
         // make agreement
         vm.prank(party1);
-        bytes32 agreementId = secretKeeper.createAgreement(
-            party2,
-            secretHash,
-            party1Signature,
-            party2Signature
-        );
+        bytes32 agreementId = secretKeeper.createAgreement(party2, secretHash, party1Signature, party2Signature);
 
         // advance to next block
         vm.roll(block.number + 1);
@@ -356,22 +277,12 @@ contract SecretKeeperTest is Test {
         bytes32 secretHash = keccak256(abi.encodePacked(secret));
 
         // get signatures
-        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
-            party1PrivateKey,
-            party2PrivateKey,
-            party1,
-            party2,
-            secretHash
-        );
+        (bytes memory party1Signature, bytes memory party2Signature) =
+            createSignatures(party1PrivateKey, party2PrivateKey, party1, party2, secretHash);
 
         // make the agreement
         vm.prank(party1);
-        bytes32 agreementId = secretKeeper.createAgreement(
-            party2,
-            secretHash,
-            party1Signature,
-            party2Signature
-        );
+        bytes32 agreementId = secretKeeper.createAgreement(party2, secretHash, party1Signature, party2Signature);
 
         // advance to next block
         vm.roll(block.number + 1);
@@ -381,12 +292,8 @@ contract SecretKeeperTest is Test {
         secretKeeper.revealSecret(agreementId, secret);
 
         // check storage after reveal
-        (
-            address storedParty1,
-            address storedParty2,
-            bytes32 storedSecretHash,
-            uint256 storedBlockNumber
-        ) = secretKeeper.agreements(agreementId);
+        (address storedParty1, address storedParty2, bytes32 storedSecretHash, uint256 storedBlockNumber) =
+            secretKeeper.agreements(agreementId);
 
         // verify all values are zero
         assertEq(storedParty1, address(0), "Party1 should be zero address");
@@ -407,22 +314,12 @@ contract SecretKeeperTest is Test {
         bytes32 secretHash = keccak256(abi.encodePacked(secret));
 
         // signatures creation
-        (bytes memory party1Signature, bytes memory party2Signature) = createSignatures(
-            party1PrivateKey,
-            party2PrivateKey,
-            party2,
-            party1,
-            secretHash
-        );
+        (bytes memory party1Signature, bytes memory party2Signature) =
+            createSignatures(party1PrivateKey, party2PrivateKey, party2, party1, secretHash);
 
         // party2 creates the agreement
         vm.prank(party2);
-        bytes32 agreementId = secretKeeper.createAgreement(
-            party1,
-            secretHash,
-            party2Signature,
-            party1Signature
-        );
+        bytes32 agreementId = secretKeeper.createAgreement(party1, secretHash, party2Signature, party1Signature);
 
         // advance block for reveal
         vm.roll(block.number + 1);
